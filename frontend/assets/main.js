@@ -462,7 +462,7 @@ function initializeAdvancedSettings({ neuralScene, digitCanvas, onConnectionsSet
   } else if (connectionSlider) {
     connectionSlider.disabled = true;
     if (connectionValue) {
-      connectionValue.textContent = "ΓÇö";
+      connectionValue.textContent = "—";
     }
   }
 
@@ -547,7 +547,7 @@ function initializeAdvancedSettings({ neuralScene, digitCanvas, onConnectionsSet
   } else if (connectionThresholdSlider) {
     connectionThresholdSlider.disabled = true;
     if (connectionThresholdValue) {
-      connectionThresholdValue.textContent = "ΓÇö";
+      connectionThresholdValue.textContent = "—";
     }
   }
 
@@ -586,7 +586,7 @@ function initializeAdvancedSettings({ neuralScene, digitCanvas, onConnectionsSet
   } else if (connectionThicknessSlider) {
     connectionThicknessSlider.disabled = true;
     if (connectionThicknessValue) {
-      connectionThicknessValue.textContent = "ΓÇö";
+      connectionThicknessValue.textContent = "—";
     }
   }
 
@@ -649,9 +649,9 @@ function initializeAdvancedSettings({ neuralScene, digitCanvas, onConnectionsSet
     }
   } else {
     if (thicknessSlider) thicknessSlider.disabled = true;
-    if (thicknessValue) thicknessValue.textContent = "ΓÇö";
+    if (thicknessValue) thicknessValue.textContent = "—";
     if (strengthSlider) strengthSlider.disabled = true;
-    if (strengthValue) strengthValue.textContent = "ΓÇö";
+    if (strengthValue) strengthValue.textContent = "—";
   }
 
   document.addEventListener("keydown", (event) => {
@@ -1479,7 +1479,7 @@ class NetworkInfoPanel {
   }
 
   formatNumber(value) {
-    if (!Number.isFinite(value)) return "ΓÇö";
+    if (!Number.isFinite(value)) return "—";
     return this.numberFormatter.format(Math.round(value));
   }
 
@@ -1776,8 +1776,8 @@ class NeuronDetailPanel {
   }
 
   formatValue(value) {
-    if (value === null || value === undefined || Number.isNaN(value)) return "ΓÇö";
-    if (!Number.isFinite(value)) return value > 0 ? "Γê₧" : value < 0 ? "-Γê₧" : "NaN";
+    if (value === null || value === undefined || Number.isNaN(value)) return "—";
+    if (!Number.isFinite(value)) return value > 0 ? "∞" : value < 0 ? "-∞" : "NaN";
     const abs = Math.abs(value);
     if (abs >= 10000 || (abs > 0 && abs < 0.0001)) {
       return value.toExponential(2);
@@ -1799,7 +1799,7 @@ class FpsMonitor {
 
     this.valueElement = document.createElement("span");
     this.valueElement.className = "fps-overlay__value";
-    this.valueElement.textContent = "ΓÇö fps";
+    this.valueElement.textContent = "— fps";
 
     this.root.appendChild(this.valueElement);
     document.body.appendChild(this.root);
@@ -1846,7 +1846,7 @@ class FpsMonitor {
     if (this.currentFps !== null) {
       this.valueElement.textContent = `${this.currentFps} fps`;
     } else {
-      this.valueElement.textContent = "ΓÇö fps";
+      this.valueElement.textContent = "— fps";
     }
   }
 }

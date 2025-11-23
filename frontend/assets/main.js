@@ -171,6 +171,7 @@ async function setupMnistSampleButtons({ digitCanvas, onSampleApplied, manifestP
 
 async function initializeVisualizer() {
   initializeInfoDialog();
+  initializeInstructionsModal();
 
   const weightDefinitionUrl = new URL(VISUALIZER_CONFIG.weightUrl, window.location.href);
   const definition = await fetchNetworkDefinition(weightDefinitionUrl.toString());
@@ -347,6 +348,30 @@ function initializeInfoDialog() {
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && infoModal.classList.contains("visible")) {
+      hideModal();
+    }
+  });
+}
+
+function initializeInstructionsModal() {
+  const instructionsModal = document.getElementById("instructionsModal");
+  const instructionsButton = document.getElementById("instructionsButton");
+  const closeButton = document.getElementById("closeInstructionsModal");
+  if (!instructionsModal) return;
+
+  const showModal = () => instructionsModal.classList.add("visible");
+  const hideModal = () => instructionsModal.classList.remove("visible");
+
+  instructionsButton?.addEventListener("click", showModal);
+  closeButton?.addEventListener("click", hideModal);
+  instructionsModal.addEventListener("click", (event) => {
+    if (event.target === instructionsModal) {
+      hideModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && instructionsModal.classList.contains("visible")) {
       hideModal();
     }
   });

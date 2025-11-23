@@ -47,10 +47,15 @@ git clone https://github.com/yourusername/neural-network-visualization.git
 cd neural-network-visualization
 
 # Install Python dependencies
-pip install torch torchvision numpy
+pip install -r requirements.txt
 
 # Run the application
 python main.py
+```
+
+**Alternative:** Run the backend launcher directly:
+```bash
+python -m backend.launcher
 ```
 
 The application will automatically:
@@ -120,21 +125,27 @@ python main.py --help
 
 The application consists of **three main components**:
 
-1. **Backend (Python/PyTorch)** - Trains the neural network and exports weights
+1. **Backend (Python/Flask)** - REST API server for training, asset management, and model info
 2. **Frontend (JavaScript/Three.js)** - Interactive 3D visualization in the browser
-3. **Server (Python HTTP Server)** - Serves the frontend and handles file requests
+3. **Training (Python/PyTorch)** - Neural network training and weight export
 
 ```
 ┌─────────────────┐
-│   main.py       │  ← Entry point: Starts server, runs training if needed
+│   main.py       │  ← Entry point: Starts Flask server, runs training if needed
 └────────┬────────┘
          │
     ┌────┴────┐
     │         │
 ┌───▼───┐ ┌──▼──────┐
 │Backend│ │Frontend │
-│PyTorch│ │Three.js │
+│ Flask │ │Three.js │
+│  API  │ │  3D UI  │
 └───────┘ └─────────┘
+    │
+┌───▼──────┐
+│ Training │
+│ PyTorch  │
+└──────────┘
 ```
 
 ---
@@ -143,14 +154,25 @@ The application consists of **three main components**:
 
 ```
 neural-network-visualization/
-├── main.py                    # Main entry point - starts server
-├── index.html                 # Frontend HTML entry point
+├── main.py                    # Main entry point (compatibility wrapper)
+├── requirements.txt            # Python dependencies
 ├── README.md                  # This file
 ├── LICENSE                    # License file
 ├── .gitignore                 # Git ignore rules
 ├── fix_timeline.py           # Utility to fix timeline references
 │
 ├── backend/
+│   ├── __init__.py
+│   ├── server.py              # Flask application and server setup
+│   ├── launcher.py            # Application launcher with CLI
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── routes.py          # REST API route handlers
+│   │   └── models.py          # API response models
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── training_service.py # Training orchestration
+│   │   └── asset_service.py    # MNIST asset management
 │   ├── training/
 │   │   └── mlp_train.py      # Neural network training script
 │   ├── tools/
@@ -160,8 +182,9 @@ neural-network-visualization/
 │       └── MNIST/            # MNIST dataset (downloaded automatically)
 │
 └── frontend/
+    ├── index.html            # Frontend HTML entry point
     ├── assets/
-    │   ├── main.js           # All frontend JavaScript (2937 lines)
+    │   ├── main.js           # All frontend JavaScript
     │   ├── main.css          # Styling
     │   └── data/             # MNIST test samples (binary format)
     └── exports/
@@ -285,6 +308,142 @@ Explore how the network learns over time with 26 training snapshots:
 
 ---
 
+## 🔌 REST API
+
+The backend provides a REST API for programmatic access to training, assets, and model information.
+
+### Base URL
+```
+http://localhost:8000/api/v1
+```
+
+### Endpoints
+
+#### Health Check
+```http
+GET /api/v1/health
+```
+Returns API health status.
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "API is healthy"
+}
+```
+
+#### Model Information
+```http
+GET /api/v1/model/info
+```
+Get model metadata and weights information.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "location": "path/to/mlp_weights.json",
+    "architecture": [784, 128, 64, 10],
+    "layers": 3,
+    "timeline_entries": 26
+  }
+}
+```
+
+#### Start Training
+```http
+POST /api/v1/training/start
+Content-Type: application/json
+
+{
+  "force": false
+}
+```
+Start training job. Set `force: true` to retrain even if weights exist.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Training completed successfully!",
+    "location": "path/to/mlp_weights.json"
+  }
+}
+```
+
+#### Training Status
+```http
+GET /api/v1/training/status
+```
+Get current training status and model information.
+
+#### Prepare MNIST Assets
+```http
+POST /api/v1/assets/prepare-mnist
+Content-Type: application/json
+
+{
+  "force": false
+}
+```
+Prepare MNIST test assets. Set `force: true` to regenerate even if assets exist.
+
+#### MNIST Asset Status
+```http
+GET /api/v1/assets/mnist-status
+```
+Get status of MNIST assets.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "exists": true,
+    "num_samples": 10000,
+    "image_shape": [28, 28]
+  }
+}
+```
+
+#### Validate Timeline
+```http
+GET /api/v1/timeline/validate?fix=true
+```
+Validate timeline entries. Add `?fix=true` to automatically fix missing entries.
+
+#### Fix Timeline
+```http
+POST /api/v1/timeline/fix
+```
+Fix timeline issues by removing invalid entries.
+
+### Example Usage
+
+```bash
+# Check API health
+curl http://localhost:8000/api/v1/health
+
+# Get model info
+curl http://localhost:8000/api/v1/model/info
+
+# Start training
+curl -X POST http://localhost:8000/api/v1/training/start \
+  -H "Content-Type: application/json" \
+  -d '{"force": false}'
+
+# Prepare MNIST assets
+curl -X POST http://localhost:8000/api/v1/assets/prepare-mnist \
+  -H "Content-Type: application/json" \
+  -d '{"force": false}'
+```
+
+---
+
 ## 🐛 Troubleshooting
 
 **Problem**: Training takes too long
@@ -307,15 +466,16 @@ Explore how the network learns over time with 26 training snapshots:
 ## 📊 Requirements
 
 ### Python Dependencies
-```
-torch>=1.9.0
-torchvision>=0.10.0
-numpy>=1.19.0
-```
+All dependencies are listed in `requirements.txt`:
+- `torch>=1.9.0` - PyTorch for neural network training
+- `torchvision>=0.10.0` - MNIST dataset loading
+- `numpy>=1.19.0` - Numerical operations
+- `Flask>=2.0.0` - Web framework for REST API
+- `flask-cors>=3.0.0` - CORS support for API
 
 Install with:
 ```bash
-pip install torch torchvision numpy
+pip install -r requirements.txt
 ```
 
 ### Browser Requirements

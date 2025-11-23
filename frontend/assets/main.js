@@ -916,7 +916,7 @@ function formatSnapshotDescription(snapshot) {
   if (Number.isFinite(snapshot.batchesSeen)) {
     parts.push(`${formatInteger(snapshot.batchesSeen)} batches`);
   }
-  return parts.join(" ΓÇó ");
+  return parts.join(" • ");
 }
 
 function formatTimelineMetrics(metrics) {
@@ -928,7 +928,7 @@ function formatTimelineMetrics(metrics) {
   if (Number.isFinite(metrics.avgTrainingLoss)) {
     segments.push(`Avg loss: ${formatDecimal(metrics.avgTrainingLoss, 4)}`);
   }
-  return segments.join(" ΓÇó ");
+  return segments.join(" • ");
 }
 
 function setupTimelineSlider(timelineSnapshots, options = {}) {
@@ -1589,13 +1589,13 @@ class NetworkInfoPanel {
       const title = document.createElement("div");
       title.className = "network-info-panel__layer-title";
       const activationLabel = entry.activation ? ` (${entry.activation})` : "";
-      title.textContent = `${entry.name}${activationLabel} ΓÇó ${this.formatNumber(entry.inputSize)} ΓåÆ ${this.formatNumber(entry.outputSize)}`;
+      title.textContent = `${entry.name}${activationLabel} • ${this.formatNumber(entry.inputSize)} → ${this.formatNumber(entry.outputSize)}`;
 
       const metrics = document.createElement("div");
       metrics.className = "network-info-panel__layer-metrics";
       metrics.appendChild(this.buildMetric("Weights", entry.weightCount));
       metrics.appendChild(this.buildMetric("Bias", entry.biasCount));
-      metrics.appendChild(this.buildMetric("Summe", entry.parameterCount));
+      metrics.appendChild(this.buildMetric("Total", entry.parameterCount));
 
       layerRow.appendChild(title);
       layerRow.appendChild(metrics);
@@ -1650,10 +1650,10 @@ class NeuronDetailPanel {
           .map(
             (entry) => `
       <div class="neuron-detail-panel__row">
-        <div><small>Quelle</small><br><strong>#${entry.sourceIndex + 1}</strong></div>
+        <div><small>Source</small><br><strong>#${entry.sourceIndex + 1}</strong></div>
         <div><small>Input</small><br>${this.formatValue(entry.sourceActivation)}</div>
         <div><small>Weight</small><br>${this.formatValue(entry.weight)}</div>
-        <div><small>Produkt</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
+        <div><small>Product</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
       </div>
     `,
           )
@@ -1665,10 +1665,10 @@ class NeuronDetailPanel {
           .map(
             (entry) => `
       <div class="neuron-detail-panel__row">
-        <div><small>Ziel</small><br><strong>#${entry.targetIndex + 1}</strong></div>
-        <div><small>Aktivierung (Ziel)</small><br>${this.formatValue(entry.targetActivation)}</div>
+        <div><small>Target</small><br><strong>#${entry.targetIndex + 1}</strong></div>
+        <div><small>Activation (Target)</small><br>${this.formatValue(entry.targetActivation)}</div>
         <div><small>Weight</small><br>${this.formatValue(entry.weight)}</div>
-        <div><small>Beitrag</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
+        <div><small>Contribution</small><br><strong>${this.formatValue(entry.contribution)}</strong></div>
       </div>
     `,
           )
@@ -1713,12 +1713,12 @@ class NeuronDetailPanel {
     const incomingSection = hasIncoming
       ? `
       <div>
-        <div class="neuron-detail-panel__section-title">Eingehende Beitr├ñge</div>
+        <div class="neuron-detail-panel__section-title">Incoming Contributions</div>
         <div class="neuron-detail-panel__row neuron-detail-panel__row--header">
-          <div>Quelle</div>
+          <div>Source</div>
           <div>Input</div>
           <div>Weight</div>
-          <div>Produkt</div>
+          <div>Product</div>
         </div>
         ${incomingRows}
       </div>
@@ -1728,12 +1728,12 @@ class NeuronDetailPanel {
     const outgoingSection = hasOutgoing
       ? `
       <div>
-        <div class="neuron-detail-panel__section-title">Ausgehende Beitr├ñge</div>
+        <div class="neuron-detail-panel__section-title">Outgoing Contributions</div>
         <div class="neuron-detail-panel__row neuron-detail-panel__row--header">
-          <div>Ziel</div>
-          <div>Aktivierung (Ziel)</div>
+          <div>Target</div>
+          <div>Activation (Target)</div>
           <div>Weight</div>
-          <div>Beitrag</div>
+          <div>Contribution</div>
         </div>
         ${outgoingRows}
       </div>
@@ -1748,7 +1748,7 @@ class NeuronDetailPanel {
     this.root.innerHTML = `
       <div class="neuron-detail-panel__inner">
         <div class="neuron-detail-panel__header">
-          <div class="neuron-detail-panel__title">${payload.layerLabel} ΓÇó Neuron ${payload.neuronIndex + 1}${
+          <div class="neuron-detail-panel__title">${payload.layerLabel} • Neuron ${payload.neuronIndex + 1}${
             payload.activationName ? ` (${payload.activationName})` : ""
           }</div>
           <button type="button" class="neuron-detail-panel__close">Clear Selection</button>

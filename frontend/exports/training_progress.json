@@ -1,14 +1,14 @@
 {
   "status": "completed",
-  "current_epoch": 50,
-  "target_epochs": 50,
-  "images_seen": 3000000,
+  "current_epoch": 5,
+  "target_epochs": 5,
+  "images_seen": 300000,
   "total_required_images": 3000000,
-  "global_step": 23450,
-  "milestone_index": 35,
+  "global_step": 2345,
+  "milestone_index": 22,
   "total_milestones": 35,
-  "current_loss": 0.007356651385515579,
-  "test_accuracy": 97.74000000000001,
-  "dataset_passes": 50.0,
-  "progress_percent": 100.0
+  "current_loss": 0.05217928468386332,
+  "test_accuracy": 97.28,
+  "dataset_passes": 5.0,
+  "progress_percent": 10.0
 }

@@ -339,7 +339,7 @@ def main() -> None:
         "--epochs",
         type=int,
         default=5,
-        help="Minimum number of epochs. The run extends automatically to reach all timeline milestones.",
+        help="Number of training epochs. Training will stop after this many epochs.",
     )
     parser.add_argument("--batch-size", type=int, default=128, help="Mini-batch size.")
     parser.add_argument(
@@ -448,7 +448,8 @@ def main() -> None:
     last_eval_accuracy = 0.0
     total_required_images = milestones[-1].threshold_images
     required_epochs = math.ceil(total_required_images / dataset_size) if dataset_size else 0
-    target_epochs = max(args.epochs, required_epochs)
+    # Respect the user's epochs parameter instead of auto-extending
+    target_epochs = args.epochs
     
     # Progress tracking
     progress_file = args.progress_file

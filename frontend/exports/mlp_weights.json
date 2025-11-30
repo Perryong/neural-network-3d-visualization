@@ -73,7 +73,7 @@
       "dataset_passes": 0.0,
       "description": "0 images processed (random initialisation)",
       "metrics": {
-        "test_accuracy": 0.0824
+        "test_accuracy": 0.1075
       },
       "weights": {
         "path": "mlp_weights/000_initial.json",
@@ -92,8 +92,8 @@
       "dataset_passes": 0.0021333333333333334,
       "description": "128 images processed \u2022 1 batches \u2022 0.00\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.2275,
-        "avg_training_loss": 2.2957136631011963
+        "test_accuracy": 0.2175,
+        "avg_training_loss": 2.3065266609191895
       },
       "weights": {
         "path": "mlp_weights/001_approx-50.json",
@@ -112,8 +112,8 @@
       "dataset_passes": 0.0021333333333333334,
       "description": "128 images processed \u2022 1 batches \u2022 0.00\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.2275,
-        "avg_training_loss": 2.2957136631011963
+        "test_accuracy": 0.2175,
+        "avg_training_loss": 2.3065266609191895
       },
       "weights": {
         "path": "mlp_weights/002_approx-120.json",
@@ -132,8 +132,8 @@
       "dataset_passes": 0.004266666666666667,
       "description": "256 images processed \u2022 2 batches \u2022 0.00\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.2616,
-        "avg_training_loss": 2.2584387063980103
+        "test_accuracy": 0.2484,
+        "avg_training_loss": 2.2827950716018677
       },
       "weights": {
         "path": "mlp_weights/003_approx-250.json",
@@ -152,8 +152,8 @@
       "dataset_passes": 0.008533333333333334,
       "description": "512 images processed \u2022 4 batches \u2022 0.01\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.3364,
-        "avg_training_loss": 2.2265948057174683
+        "test_accuracy": 0.3557,
+        "avg_training_loss": 2.2204062938690186
       },
       "weights": {
         "path": "mlp_weights/004_approx-500.json",
@@ -172,8 +172,8 @@
       "dataset_passes": 0.017066666666666667,
       "description": "1,024 images processed \u2022 8 batches \u2022 0.02\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.4024,
-        "avg_training_loss": 2.0784646719694138
+        "test_accuracy": 0.6821,
+        "avg_training_loss": 2.076693534851074
       },
       "weights": {
         "path": "mlp_weights/005_approx-1k.json",
@@ -192,8 +192,8 @@
       "dataset_passes": 0.034133333333333335,
       "description": "2,048 images processed \u2022 16 batches \u2022 0.03\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.7084,
-        "avg_training_loss": 1.7872377932071686
+        "test_accuracy": 0.7656,
+        "avg_training_loss": 1.7137945964932442
       },
       "weights": {
         "path": "mlp_weights/006_approx-2k.json",
@@ -212,8 +212,8 @@
       "dataset_passes": 0.05973333333333333,
       "description": "3,584 images processed \u2022 28 batches \u2022 0.06\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.8254,
-        "avg_training_loss": 1.3867880276271276
+        "test_accuracy": 0.835,
+        "avg_training_loss": 1.2977977331195558
       },
       "weights": {
         "path": "mlp_weights/007_approx-3-5k.json",
@@ -232,8 +232,8 @@
       "dataset_passes": 0.09813333333333334,
       "description": "5,888 images processed \u2022 46 batches \u2022 0.10\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.8589,
-        "avg_training_loss": 1.0574636394562928
+        "test_accuracy": 0.8793,
+        "avg_training_loss": 0.9829015051541121
       },
       "weights": {
         "path": "mlp_weights/008_approx-5-8k.json",
@@ -252,8 +252,8 @@
       "dataset_passes": 0.14506666666666668,
       "description": "8,704 images processed \u2022 68 batches \u2022 0.15\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.8944,
-        "avg_training_loss": 0.8497767711386961
+        "test_accuracy": 0.893,
+        "avg_training_loss": 0.7932415378882605
       },
       "weights": {
         "path": "mlp_weights/009_approx-8-7k.json",
@@ -272,8 +272,8 @@
       "dataset_passes": 0.2176,
       "description": "13,056 images processed \u2022 102 batches \u2022 0.22\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.9138,
-        "avg_training_loss": 0.6846146941477177
+        "test_accuracy": 0.9094,
+        "avg_training_loss": 0.6410519496775141
       },
       "weights": {
         "path": "mlp_weights/010_approx-13k.json",
@@ -292,8 +292,8 @@
       "dataset_passes": 0.3264,
       "description": "19,584 images processed \u2022 153 batches \u2022 0.33\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.92,
-        "avg_training_loss": 0.5538315370776294
+        "test_accuracy": 0.9187,
+        "avg_training_loss": 0.528347953374869
       },
       "weights": {
         "path": "mlp_weights/011_approx-19-5k.json",
@@ -312,8 +312,8 @@
       "dataset_passes": 0.47573333333333334,
       "description": "28,544 images processed \u2022 223 batches \u2022 0.48\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.926,
-        "avg_training_loss": 0.4583956921314445
+        "test_accuracy": 0.9371,
+        "avg_training_loss": 0.44339758184458644
       },
       "weights": {
         "path": "mlp_weights/012_approx-28-5k.json",
@@ -332,8 +332,8 @@
       "dataset_passes": 0.6677333333333333,
       "description": "40,064 images processed \u2022 313 batches \u2022 0.67\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.9429,
-        "avg_training_loss": 0.3925126619137133
+        "test_accuracy": 0.9421,
+        "avg_training_loss": 0.3803065895986633
       },
       "weights": {
         "path": "mlp_weights/013_approx-40k.json",
@@ -352,8 +352,8 @@
       "dataset_passes": 1.0,
       "description": "60,000 images \u2022 1\u00d7 dataset \u2022 469 batches",
       "metrics": {
-        "test_accuracy": 0.9527,
-        "avg_training_loss": 0.32370047661066054
+        "test_accuracy": 0.9548,
+        "avg_training_loss": 0.31449467156330746
       },
       "weights": {
         "path": "mlp_weights/014_dataset-1x.json",
@@ -373,8 +373,8 @@
       "dataset_passes": 1.3349333333333333,
       "description": "80,096 images processed \u2022 626 batches \u2022 1.33\u00d7 dataset",
       "metrics": {
-        "test_accuracy": 0.9565,
-        "avg_training_loss": 0.27668615911026456
+        "test_accuracy": 0.9617,
+        "avg_training_loss": 0.2725211026707364
       },
       "weights": {
         "path": "mlp_weights/015_approx-80k.json",
@@ -393,8 +393,8 @@
       "dataset_passes": 1.5013333333333334,
       "description": "90,080 images \u2022 1.5\u00d7 dataset \u2022 704 batches",
       "metrics": {
-        "test_accuracy": 0.9628,
-        "avg_training_loss": 0.2619149793925336
+        "test_accuracy": 0.9591,
+        "avg_training_loss": 0.25541556582622377
       },
       "weights": {
         "path": "mlp_weights/016_dataset-1-5x.json",
@@ -414,8 +414,8 @@
       "dataset_passes": 2.0,
       "description": "120,000 images \u2022 2\u00d7 dataset \u2022 938 batches",
       "metrics": {
-        "test_accuracy": 0.967,
-        "avg_training_loss": 0.22648574273983638
+        "test_accuracy": 0.9635,
+        "avg_training_loss": 0.22124013954202335
       },
       "weights": {
         "path": "mlp_weights/017_dataset-2x.json",
@@ -435,8 +435,8 @@
       "dataset_passes": 2.501333333333333,
       "description": "150,080 images \u2022 2.5\u00d7 dataset \u2022 1,173 batches",
       "metrics": {
-        "test_accuracy": 0.9687,
-        "avg_training_loss": 0.19902452350552402
+        "test_accuracy": 0.9707,
+        "avg_training_loss": 0.19433110508678564
       },
       "weights": {
         "path": "mlp_weights/018_dataset-2-5x.json",
@@ -456,8 +456,8 @@
       "dataset_passes": 3.0,
       "description": "180,000 images \u2022 3\u00d7 dataset \u2022 1,407 batches",
       "metrics": {
-        "test_accuracy": 0.9706,
-        "avg_training_loss": 0.18068590417702993
+        "test_accuracy": 0.9735,
+        "avg_training_loss": 0.17632727802594503
       },
       "weights": {
         "path": "mlp_weights/019_dataset-3x.json",
@@ -477,8 +477,8 @@
       "dataset_passes": 4.0,
       "description": "240,000 images \u2022 4\u00d7 dataset \u2022 1,876 batches",
       "metrics": {
-        "test_accuracy": 0.973,
-        "avg_training_loss": 0.1527490486641725
+        "test_accuracy": 0.9717,
+        "avg_training_loss": 0.14843609057863552
       },
       "weights": {
         "path": "mlp_weights/020_dataset-4x.json",
@@ -498,8 +498,8 @@
       "dataset_passes": 5.0,
       "description": "300,000 images \u2022 5\u00d7 dataset \u2022 2,345 batches",
       "metrics": {
-        "test_accuracy": 0.9752,
-        "avg_training_loss": 0.13297332154472669
+        "test_accuracy": 0.9728,
+        "avg_training_loss": 0.1291847293996811
       },
       "weights": {
         "path": "mlp_weights/021_dataset-5x.json",
@@ -507,279 +507,6 @@
         "format": "layer_array_v1"
       },
       "dataset_multiple": 5.0
-    },
-    {
-      "id": "dataset_6_5x",
-      "order": 22,
-      "label": "6.5\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 390000,
-      "images_seen": 390080,
-      "batches_seen": 3049,
-      "dataset_passes": 6.501333333333333,
-      "description": "390,080 images \u2022 6.5\u00d7 dataset \u2022 3,049 batches",
-      "metrics": {
-        "test_accuracy": 0.9752,
-        "avg_training_loss": 0.11153389412047948
-      },
-      "weights": {
-        "path": "mlp_weights/022_dataset-6-5x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 6.5
-    },
-    {
-      "id": "dataset_8_5x",
-      "order": 23,
-      "label": "8.5\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 510000,
-      "images_seen": 510080,
-      "batches_seen": 3987,
-      "dataset_passes": 8.501333333333333,
-      "description": "510,080 images \u2022 8.5\u00d7 dataset \u2022 3,987 batches",
-      "metrics": {
-        "test_accuracy": 0.9776,
-        "avg_training_loss": 0.09262749977790198
-      },
-      "weights": {
-        "path": "mlp_weights/023_dataset-8-5x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 8.5
-    },
-    {
-      "id": "dataset_10x",
-      "order": 24,
-      "label": "10\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 600000,
-      "images_seen": 600000,
-      "batches_seen": 4690,
-      "dataset_passes": 10.0,
-      "description": "600,000 images \u2022 10\u00d7 dataset \u2022 4,690 batches",
-      "metrics": {
-        "test_accuracy": 0.9759,
-        "avg_training_loss": 0.08244930401104192
-      },
-      "weights": {
-        "path": "mlp_weights/024_dataset-10x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 10.0
-    },
-    {
-      "id": "dataset_12_5x",
-      "order": 25,
-      "label": "12.5\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 750000,
-      "images_seen": 750080,
-      "batches_seen": 5863,
-      "dataset_passes": 12.501333333333333,
-      "description": "750,080 images \u2022 12.5\u00d7 dataset \u2022 5,863 batches",
-      "metrics": {
-        "test_accuracy": 0.9766,
-        "avg_training_loss": 0.0694367328607731
-      },
-      "weights": {
-        "path": "mlp_weights/025_dataset-12-5x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 12.5
-    },
-    {
-      "id": "dataset_15x",
-      "order": 26,
-      "label": "15\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 900000,
-      "images_seen": 900000,
-      "batches_seen": 7035,
-      "dataset_passes": 15.0,
-      "description": "900,000 images \u2022 15\u00d7 dataset \u2022 7,035 batches",
-      "metrics": {
-        "test_accuracy": 0.9792,
-        "avg_training_loss": 0.06038362790262844
-      },
-      "weights": {
-        "path": "mlp_weights/026_dataset-15x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 15.0
-    },
-    {
-      "id": "dataset_17_5x",
-      "order": 27,
-      "label": "17.5\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 1050000,
-      "images_seen": 1050080,
-      "batches_seen": 8208,
-      "dataset_passes": 17.501333333333335,
-      "description": "1,050,080 images \u2022 17.5\u00d7 dataset \u2022 8,208 batches",
-      "metrics": {
-        "test_accuracy": 0.9771,
-        "avg_training_loss": 0.05361340218495379
-      },
-      "weights": {
-        "path": "mlp_weights/027_dataset-17-5x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 17.5
-    },
-    {
-      "id": "dataset_20x",
-      "order": 28,
-      "label": "20\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 1200000,
-      "images_seen": 1200000,
-      "batches_seen": 9380,
-      "dataset_passes": 20.0,
-      "description": "1,200,000 images \u2022 20\u00d7 dataset \u2022 9,380 batches",
-      "metrics": {
-        "test_accuracy": 0.9793,
-        "avg_training_loss": 0.04830915377836907
-      },
-      "weights": {
-        "path": "mlp_weights/028_dataset-20x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 20.0
-    },
-    {
-      "id": "dataset_25x",
-      "order": 29,
-      "label": "25\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 1500000,
-      "images_seen": 1500000,
-      "batches_seen": 11725,
-      "dataset_passes": 25.0,
-      "description": "1,500,000 images \u2022 25\u00d7 dataset \u2022 11,725 batches",
-      "metrics": {
-        "test_accuracy": 0.9774,
-        "avg_training_loss": 0.04050796043733865
-      },
-      "weights": {
-        "path": "mlp_weights/029_dataset-25x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 25.0
-    },
-    {
-      "id": "dataset_30x",
-      "order": 30,
-      "label": "30\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 1800000,
-      "images_seen": 1800000,
-      "batches_seen": 14070,
-      "dataset_passes": 30.0,
-      "description": "1,800,000 images \u2022 30\u00d7 dataset \u2022 14,070 batches",
-      "metrics": {
-        "test_accuracy": 0.9787,
-        "avg_training_loss": 0.035141220672870455
-      },
-      "weights": {
-        "path": "mlp_weights/030_dataset-30x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 30.0
-    },
-    {
-      "id": "dataset_35x",
-      "order": 31,
-      "label": "35\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 2100000,
-      "images_seen": 2100000,
-      "batches_seen": 16415,
-      "dataset_passes": 35.0,
-      "description": "2,100,000 images \u2022 35\u00d7 dataset \u2022 16,415 batches",
-      "metrics": {
-        "test_accuracy": 0.9801,
-        "avg_training_loss": 0.031121628547190854
-      },
-      "weights": {
-        "path": "mlp_weights/031_dataset-35x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 35.0
-    },
-    {
-      "id": "dataset_40x",
-      "order": 32,
-      "label": "40\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 2400000,
-      "images_seen": 2400000,
-      "batches_seen": 18760,
-      "dataset_passes": 40.0,
-      "description": "2,400,000 images \u2022 40\u00d7 dataset \u2022 18,760 batches",
-      "metrics": {
-        "test_accuracy": 0.9787,
-        "avg_training_loss": 0.02815265173552369
-      },
-      "weights": {
-        "path": "mlp_weights/032_dataset-40x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 40.0
-    },
-    {
-      "id": "dataset_45x",
-      "order": 33,
-      "label": "45\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 2700000,
-      "images_seen": 2700000,
-      "batches_seen": 21105,
-      "dataset_passes": 45.0,
-      "description": "2,700,000 images \u2022 45\u00d7 dataset \u2022 21,105 batches",
-      "metrics": {
-        "test_accuracy": 0.9789,
-        "avg_training_loss": 0.02561490800607313
-      },
-      "weights": {
-        "path": "mlp_weights/033_dataset-45x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 45.0
-    },
-    {
-      "id": "dataset_50x",
-      "order": 34,
-      "label": "50\u00d7 dataset",
-      "kind": "dataset_multiple",
-      "target_images": 3000000,
-      "images_seen": 3000000,
-      "batches_seen": 23450,
-      "dataset_passes": 50.0,
-      "description": "3,000,000 images \u2022 50\u00d7 dataset \u2022 23,450 batches",
-      "metrics": {
-        "test_accuracy": 0.9774,
-        "avg_training_loss": 0.02373043114651907
-      },
-      "weights": {
-        "path": "mlp_weights/034_dataset-50x.json",
-        "dtype": "float16",
-        "format": "layer_array_v1"
-      },
-      "dataset_multiple": 50.0
     }
   ]
 }

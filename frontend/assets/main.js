@@ -2984,6 +2984,15 @@ class TrainingPanel {
     // Training state
     this.isTraining = false;
     this.progressPollInterval = null;
+    
+    // Chart data storage
+    this.accuracyChart = null;
+    this.accuracyData = {
+      epochs: [],
+      accuracies: [],
+      losses: []
+    };
+    
     this.trainingConfig = {
       dataset: 'mnist',
       epochs: 5,
@@ -3142,7 +3151,7 @@ class TrainingPanel {
         </div>
         
         <!-- Progress/Status Display -->
-        <div class="training-status" id="trainingStatus" style="display: none;">
+        <div class="training-status" id="trainingStatus">
           <div class="training-status__spinner"></div>
           <div class="training-status__message" id="statusMessage">Initializing training...</div>
         </div>
@@ -3151,6 +3160,12 @@ class TrainingPanel {
         <div class="training-error" id="trainingError" style="display: none;">
           <div class="training-error__icon">⚠️</div>
           <div class="training-error__message" id="errorMessage"></div>
+        </div>
+        
+        <!-- Accuracy Chart -->
+        <div class="training-chart-container" id="accuracyChartContainer">
+          <h3 class="training-chart-title">Training Progress</h3>
+          <canvas id="accuracyChart"></canvas>
         </div>
       </div>
     `;
@@ -3320,7 +3335,25 @@ class TrainingPanel {
     this.isTraining = true;
     this.showStatus('Starting training... This may take several minutes.');
     this.hideError();
-    this.elements.startTrainingBtn.disabled = true;
+    
+    // Update button state immediately - use innerHTML to ensure emoji displays
+    if (this.elements.startTrainingBtn) {
+      this.elements.startTrainingBtn.disabled = true;
+      this.elements.startTrainingBtn.innerHTML = '⏳ Training...';
+      this.elements.startTrainingBtn.textContent = '⏳ Training...';
+      // Force a reflow to ensure the change is visible
+      this.elements.startTrainingBtn.offsetHeight;
+      console.log('Button text updated to:', this.elements.startTrainingBtn.textContent);
+      console.log('Button innerHTML:', this.elements.startTrainingBtn.innerHTML);
+      console.log('Button element:', this.elements.startTrainingBtn);
+      console.log('Button computed display:', window.getComputedStyle(this.elements.startTrainingBtn).display);
+      console.log('Button visible in viewport:', this.elements.startTrainingBtn.offsetParent !== null);
+    } else {
+      console.error('Start training button not found!');
+    }
+    
+    // Initialize chart for real-time updates
+    this.initializeChart();
     
     try {
       if (typeof this.onTrainingStart === 'function') {
@@ -3356,12 +3389,49 @@ class TrainingPanel {
         
         if (wasSkipped) {
           this.showStatus('⚠ Training skipped: Weights already exist. Enable "Force retrain" to overwrite.');
+          this.isTraining = false;
+          this.elements.startTrainingBtn.disabled = false;
+          this.elements.startTrainingBtn.textContent = '🚀 Start Training';
           setTimeout(() => {
             this.hideStatus();
           }, 5000);
         } else {
-          // Start polling for progress
+          // Ensure button state is correct before starting polling
+          if (this.elements.startTrainingBtn) {
+            this.elements.startTrainingBtn.disabled = true;
+            this.elements.startTrainingBtn.innerHTML = '⏳ Training...';
+            this.elements.startTrainingBtn.textContent = '⏳ Training...';
+            console.log('Button state set before polling:', this.elements.startTrainingBtn.textContent);
+          }
+          
+          // Ensure chart is visible before starting polling
+          const container = this.panel.querySelector('#accuracyChartContainer');
+          if (container) {
+            container.removeAttribute('style');
+            container.style.display = 'block';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+            console.log('Chart container made visible before polling');
+            console.log('Container display:', window.getComputedStyle(container).display);
+            
+            // If chart exists, make sure it's visible
+            if (this.accuracyChart) {
+              setTimeout(() => {
+                if (this.accuracyChart.resize) {
+                  this.accuracyChart.resize();
+                }
+                this.accuracyChart.update('none');
+              }, 100);
+            }
+          }
+          
+          // Start polling for progress immediately
           this.startProgressPolling();
+          
+          // Also do an immediate poll to get current status
+          setTimeout(() => {
+            this.checkProgressOnce();
+          }, 500);
         }
         } else {
         // Extract error message from result
@@ -3394,10 +3464,56 @@ class TrainingPanel {
       if (typeof this.onError === 'function') {
         this.onError(error);
       }
-      } finally {
-      this.stopProgressPolling();
+      
+      // Reset button state only on error (not in finally, as training might still be running)
       this.isTraining = false;
       this.elements.startTrainingBtn.disabled = false;
+      this.elements.startTrainingBtn.textContent = '🚀 Start Training';
+    }
+  }
+  
+  /**
+   * Check progress once (for immediate status update)
+   */
+  async checkProgressOnce() {
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/training/progress`);
+      if (!response.ok) return;
+      
+      const result = await response.json();
+      if (result.success && result.data) {
+        const progress = result.data;
+        if (progress.status === 'running' || progress.status === 'initializing') {
+          // Update status immediately (replace "Starting training...")
+          const epochInfo = progress.current_epoch > 0 
+            ? `Epoch ${progress.current_epoch}/${progress.target_epochs}`
+            : 'Initializing...';
+          const progressPercent = progress.progress_percent || 0;
+          const accuracy = progress.test_accuracy ? `Accuracy: ${progress.test_accuracy.toFixed(2)}%` : '';
+          const loss = progress.current_loss > 0 ? `Loss: ${progress.current_loss.toFixed(4)}` : '';
+          
+          const statusParts = [epochInfo];
+          if (progressPercent > 0) statusParts.push(`${progressPercent.toFixed(1)}%`);
+          if (accuracy) statusParts.push(accuracy);
+          if (loss) statusParts.push(loss);
+          
+          this.showStatus(statusParts.join(' • '));
+          
+          // Ensure chart is visible
+          const container = this.panel.querySelector('#accuracyChartContainer');
+          if (container) {
+            container.removeAttribute('style');
+            container.style.display = 'block';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
+          }
+          
+          // Update chart
+          this.updateChart(progress);
+        }
+      }
+    } catch (error) {
+      console.error('Error in checkProgressOnce:', error);
     }
   }
   
@@ -3418,6 +3534,15 @@ class TrainingPanel {
           if (progress.status === 'completed') {
             this.stopProgressPolling();
             this.showStatus('✓ Training completed successfully!');
+            
+            // Update button state
+            this.isTraining = false;
+            this.elements.startTrainingBtn.disabled = false;
+            this.elements.startTrainingBtn.textContent = '🚀 Start Training';
+            
+            // Update chart with final data
+            this.updateChart(progress);
+            
             if (typeof this.onTrainingComplete === 'function') {
               this.onTrainingComplete({ progress });
             }
@@ -3430,7 +3555,61 @@ class TrainingPanel {
               }
             }, 2000);
           } else if (progress.status === 'running' || progress.status === 'initializing') {
-            // Update status with progress information
+            // Ensure button shows training state
+            if (this.elements.startTrainingBtn) {
+              this.elements.startTrainingBtn.disabled = true;
+              this.elements.startTrainingBtn.innerHTML = '⏳ Training...';
+              this.elements.startTrainingBtn.textContent = '⏳ Training...';
+            }
+            
+            // Ensure chart is visible and initialized FIRST
+            const container = this.panel.querySelector('#accuracyChartContainer');
+            console.log('Progress polling - Chart container found:', container);
+            if (container) {
+              // Remove inline style that might be hiding it
+              container.removeAttribute('style');
+              container.style.display = 'block';
+              container.style.visibility = 'visible';
+              container.style.opacity = '1';
+              container.style.position = 'relative';
+              container.style.zIndex = '10';
+              console.log('Chart container made visible in polling');
+              console.log('Container computed display:', window.getComputedStyle(container).display);
+              
+              // Initialize chart if it doesn't exist yet
+              if (!this.accuracyChart) {
+                console.log('Chart not initialized in polling, checking Chart.js...');
+                if (typeof Chart !== 'undefined') {
+                  console.log('Chart.js is available, initializing chart...');
+                  this.initializeChart();
+                  // Wait a bit for chart to initialize, then force update
+                  setTimeout(() => {
+                    if (this.accuracyChart) {
+                      this.accuracyChart.resize();
+                      this.accuracyChart.update('none');
+                    }
+                  }, 100);
+                } else {
+                  console.error('Chart.js is NOT loaded! Check if script tag is present.');
+                }
+              } else {
+                console.log('Chart already initialized, ensuring it\'s visible and updated');
+                // Force chart to resize and update
+                setTimeout(() => {
+                  if (this.accuracyChart && this.accuracyChart.resize) {
+                    this.accuracyChart.resize();
+                  }
+                  if (this.accuracyChart) {
+                    this.accuracyChart.update('none');
+                  }
+                }, 50);
+              }
+            } else {
+              console.error('Chart container (#accuracyChartContainer) not found in DOM during polling!');
+              console.log('Panel element:', this.panel);
+            }
+            
+            // Update status with progress information (THIS UPDATES THE STATUS MESSAGE)
             const epochInfo = progress.current_epoch > 0 
               ? `Epoch ${progress.current_epoch}/${progress.target_epochs}`
               : 'Initializing...';
@@ -3445,9 +3624,24 @@ class TrainingPanel {
             if (loss) statusParts.push(loss);
             if (images) statusParts.push(images);
             
+            // Update the status message (this replaces "Starting training...")
             this.showStatus(statusParts.join(' • '));
+            
+            // Update chart asynchronously with new progress data
+            this.updateChart(progress);
+            
+            // Debug: Log chart state
+            if (!this.accuracyChart) {
+              console.warn('Chart not initialized yet in polling, attempting to initialize...');
+              if (typeof Chart !== 'undefined') {
+                this.initializeChart();
+              }
+            }
           } else if (progress.status === 'error') {
             this.stopProgressPolling();
+            this.isTraining = false;
+            this.elements.startTrainingBtn.disabled = false;
+            this.elements.startTrainingBtn.textContent = '🚀 Start Training';
             this.showError(progress.error || 'Training failed');
           }
         }
@@ -3499,11 +3693,311 @@ class TrainingPanel {
   }
   
   /**
+   * Initialize accuracy chart
+   */
+  initializeChart() {
+    console.log('initializeChart() called');
+    const canvas = this.panel.querySelector('#accuracyChart');
+    const container = this.panel.querySelector('#accuracyChartContainer');
+    
+    console.log('Canvas element:', canvas);
+    console.log('Container element:', container);
+    
+    if (!canvas) {
+      console.error('Chart canvas (#accuracyChart) not found in DOM');
+      return;
+    }
+    
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js library not loaded. Please check if the script is included in index.html');
+      return;
+    }
+    
+    console.log('Chart.js is available, proceeding with initialization...');
+    
+    // Reset data
+    this.accuracyData = {
+      epochs: [],
+      accuracies: [],
+      losses: []
+    };
+    
+    // Destroy existing chart if it exists
+    if (this.accuracyChart) {
+      this.accuracyChart.destroy();
+      this.accuracyChart = null;
+    }
+    
+    // Show container immediately - this is critical
+    if (container) {
+      // Remove inline style that might be hiding it
+      container.removeAttribute('style');
+      // Set all visibility properties
+      container.style.display = 'block';
+      container.style.visibility = 'visible';
+      container.style.opacity = '1';
+      container.style.position = 'relative';
+      container.style.zIndex = '10';
+      // Force a reflow to ensure display change takes effect
+      container.offsetHeight;
+      console.log('Chart container displayed and made visible');
+      console.log('Container computed style:', window.getComputedStyle(container).display);
+      console.log('Container parent:', container.parentElement);
+    } else {
+      console.error('Chart container (#accuracyChartContainer) not found in DOM');
+      console.log('Available elements in panel:', this.panel ? Array.from(this.panel.querySelectorAll('[id]')).map(el => el.id) : 'panel is null');
+      return;
+    }
+    
+    // Create new chart
+    const ctx = canvas.getContext('2d');
+    
+    try {
+    this.accuracyChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: this.accuracyData.epochs,
+        datasets: [
+          {
+            label: 'Test Accuracy (%)',
+            data: this.accuracyData.accuracies,
+            borderColor: 'rgb(91, 160, 255)',
+            backgroundColor: 'rgba(91, 160, 255, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Training Loss',
+            data: this.accuracyData.losses,
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: '#f5f7ff',
+              font: {
+                size: 12
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(10, 16, 30, 0.95)',
+            titleColor: '#f5f7ff',
+            bodyColor: '#f5f7ff',
+            borderColor: 'rgba(91, 160, 255, 0.5)',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  if (label.includes('Accuracy')) {
+                    label += context.parsed.y.toFixed(2) + '%';
+                  } else {
+                    label += context.parsed.y.toFixed(4);
+                  }
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Epoch',
+              color: '#f5f7ff',
+              font: {
+                size: 12
+              }
+            },
+            ticks: {
+              color: '#9ca3af',
+              stepSize: 1
+            },
+            grid: {
+              color: 'rgba(91, 160, 255, 0.1)'
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Accuracy (%)',
+              color: '#f5f7ff',
+              font: {
+                size: 12
+              }
+            },
+            min: 0,
+            max: 100,
+            ticks: {
+              color: '#9ca3af',
+              callback: function(value) {
+                return value + '%';
+              }
+            },
+            grid: {
+              color: 'rgba(91, 160, 255, 0.1)'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Loss',
+              color: '#f5f7ff',
+              font: {
+                size: 12
+              }
+            },
+            min: 0,
+            ticks: {
+              color: '#9ca3af'
+            },
+            grid: {
+              drawOnChartArea: false,
+            }
+          }
+        }
+      }
+    });
+    
+    console.log('Chart initialized successfully');
+    console.log('Chart instance:', this.accuracyChart);
+    console.log('Chart canvas element:', canvas);
+    console.log('Chart canvas visible:', canvas.offsetParent !== null);
+    console.log('Chart container visible:', container.offsetParent !== null);
+    console.log('Chart container computed display:', window.getComputedStyle(container).display);
+    console.log('Chart container computed visibility:', window.getComputedStyle(container).visibility);
+    console.log('Chart container computed opacity:', window.getComputedStyle(container).opacity);
+    
+    // Force chart to render
+    setTimeout(() => {
+      if (this.accuracyChart && this.accuracyChart.resize) {
+        this.accuracyChart.resize();
+        this.accuracyChart.update('none');
+        console.log('Chart forced to resize and update');
+      }
+    }, 100);
+    } catch (error) {
+      console.error('Error initializing chart:', error);
+      if (container) {
+        container.innerHTML = '<p style="color: #fca5a5;">Error initializing chart. Check console for details.</p>';
+      }
+    }
+  }
+  
+  /**
+   * Update accuracy chart with new progress data
+   */
+  updateChart(progress) {
+    if (!progress) return;
+    
+    // Ensure chart is initialized if it doesn't exist yet
+    if (!this.accuracyChart) {
+      console.log('Chart not found in updateChart, initializing...');
+      this.initializeChart();
+    }
+    
+    if (!this.accuracyChart) {
+      console.warn('Chart still not available after initialization attempt');
+      return;
+    }
+    
+    // Ensure chart container is visible
+    const container = this.panel.querySelector('#accuracyChartContainer');
+    if (container) {
+      container.style.display = 'block';
+      container.style.visibility = 'visible';
+    } else {
+      console.error('Chart container not found in updateChart');
+    }
+    
+    const currentEpoch = progress.current_epoch;
+    const accuracy = progress.test_accuracy;
+    const loss = progress.current_loss || 0;
+    
+    // Only update if we have valid data
+    if (!currentEpoch || accuracy === undefined) return;
+    
+    // Check if this epoch already exists in data
+    const epochIndex = this.accuracyData.epochs.indexOf(currentEpoch);
+    
+    if (epochIndex === -1) {
+      // New epoch - add new data point
+      this.accuracyData.epochs.push(currentEpoch);
+      this.accuracyData.accuracies.push(accuracy);
+      this.accuracyData.losses.push(loss);
+    } else {
+      // Update existing epoch data (in case of multiple updates per epoch)
+      this.accuracyData.accuracies[epochIndex] = accuracy;
+      this.accuracyData.losses[epochIndex] = loss;
+    }
+    
+    // Update chart asynchronously using requestAnimationFrame for smooth updates
+    requestAnimationFrame(() => {
+      if (this.accuracyChart) {
+        this.accuracyChart.data.labels = this.accuracyData.epochs;
+        this.accuracyChart.data.datasets[0].data = this.accuracyData.accuracies;
+        this.accuracyChart.data.datasets[1].data = this.accuracyData.losses;
+        this.accuracyChart.update('none'); // 'none' mode for instant updates without animation
+      }
+    });
+  }
+  
+  /**
    * Show training status
    */
   showStatus(message) {
-    this.elements.statusMessage.textContent = message;
-    this.elements.trainingStatus.style.display = 'flex';
+    if (this.elements.statusMessage) {
+      this.elements.statusMessage.textContent = message;
+      this.elements.statusMessage.innerHTML = message; // Also set innerHTML
+      console.log('Status message element:', this.elements.statusMessage);
+      console.log('Status message textContent:', this.elements.statusMessage.textContent);
+    } else {
+      console.error('statusMessage element not found!');
+    }
+    if (this.elements.trainingStatus) {
+      this.elements.trainingStatus.style.display = 'flex';
+      this.elements.trainingStatus.style.visibility = 'visible';
+      this.elements.trainingStatus.style.opacity = '1';
+      console.log('Training status container display:', window.getComputedStyle(this.elements.trainingStatus).display);
+      console.log('Training status container visibility:', window.getComputedStyle(this.elements.trainingStatus).visibility);
+    } else {
+      console.error('trainingStatus element not found!');
+    }
+    console.log('Status message updated to:', message);
   }
   
   /**

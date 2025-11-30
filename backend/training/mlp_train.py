@@ -8,6 +8,7 @@ import math
 import os
 import re
 import shutil
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +20,18 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+
+# Fix Windows console encoding issues
+if sys.platform == 'win32':
+    try:
+        # Try to set UTF-8 encoding for stdout/stderr on Windows
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        # If reconfiguration fails, create a wrapper that handles encoding errors
+        pass
 
 MNIST_MEAN = 0.1307
 MNIST_STD = 0.3081
@@ -371,6 +384,12 @@ def main() -> None:
         action="store_true",
         help="Skip training and just export the randomly initialised weights.",
     )
+    parser.add_argument(
+        "--progress-file",
+        type=Path,
+        default=None,
+        help="Path to write training progress JSON (for real-time monitoring).",
+    )
     args = parser.parse_args()
 
     device = resolve_device(args.device)
@@ -430,6 +449,51 @@ def main() -> None:
     total_required_images = milestones[-1].threshold_images
     required_epochs = math.ceil(total_required_images / dataset_size) if dataset_size else 0
     target_epochs = max(args.epochs, required_epochs)
+    
+    # Progress tracking
+    progress_file = args.progress_file
+    if progress_file:
+        progress_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Progress tracking variables
+    current_epoch_var = 0
+    current_avg_loss = 0.0
+    
+    def write_progress(status: str = "running", error: str | None = None) -> None:
+        """Write current training progress to JSON file."""
+        nonlocal current_epoch_var, current_avg_loss, images_seen, global_step, milestone_index, last_eval_accuracy
+        if not progress_file:
+            return
+        try:
+            # Calculate progress safely
+            progress_percent = 0.0
+            if total_required_images > 0:
+                progress_percent = min(100.0, (images_seen / total_required_images * 100))
+            
+            dataset_passes = 0.0
+            if dataset_size > 0:
+                dataset_passes = images_seen / dataset_size
+            
+            progress_data = {
+                "status": status,
+                "current_epoch": current_epoch_var,
+                "target_epochs": target_epochs,
+                "images_seen": images_seen,
+                "total_required_images": total_required_images,
+                "global_step": global_step,
+                "milestone_index": milestone_index,
+                "total_milestones": len(milestones),
+                "current_loss": current_avg_loss,
+                "test_accuracy": last_eval_accuracy * 100 if last_eval_accuracy > 0 else 0.0,
+                "dataset_passes": dataset_passes,
+                "progress_percent": progress_percent,
+            }
+            if error:
+                progress_data["error"] = error
+            progress_file.write_text(json.dumps(progress_data, indent=2))
+        except Exception as e:
+            # Don't fail training if progress writing fails
+            print(f"Warning: Could not write progress file: {e}")
 
     def record_snapshot(milestone: TimelineMilestone) -> None:
         nonlocal last_eval_accuracy, layer_metadata
@@ -464,10 +528,19 @@ def main() -> None:
         if images_seen > 0:
             entry["metrics"]["avg_training_loss"] = cumulative_loss / images_seen
         timeline_entries.append(entry)
-        print(
-            f"[Timeline] Captured '{milestone.label}' at {images_seen:,} images "
-            f"({global_step:,} batches) – accuracy: {accuracy * 100:.2f}%"
-        )
+        # Safe print that handles encoding errors
+        try:
+            print(
+                f"[Timeline] Captured '{milestone.label}' at {images_seen:,} images "
+                f"({global_step:,} batches) - accuracy: {accuracy * 100:.2f}%"
+            )
+        except UnicodeEncodeError:
+            # Fallback for Windows console encoding issues
+            safe_label = milestone.label.encode('ascii', errors='replace').decode('ascii')
+            print(
+                f"[Timeline] Captured '{safe_label}' at {images_seen:,} images "
+                f"({global_step:,} batches) - accuracy: {accuracy * 100:.2f}%"
+            )
 
     def advance_milestones() -> None:
         nonlocal milestone_index
@@ -476,12 +549,17 @@ def main() -> None:
             milestone_index += 1
 
     advance_milestones()
+    
+    # Initialize progress file
+    if progress_file:
+        write_progress("initializing")
 
     if not args.skip_train:
         training_complete = milestone_index >= len(milestones)
         for epoch in range(1, target_epochs + 1):
             if training_complete:
                 break
+            current_epoch_var = epoch
             model.train()
             epoch_loss = 0.0
             epoch_images = 0
@@ -506,6 +584,7 @@ def main() -> None:
                     break
 
             avg_epoch_loss = epoch_loss / epoch_images if epoch_images else 0.0
+            current_avg_loss = avg_epoch_loss
             if not training_complete:
                 # Ensure we keep tabs on accuracy even if no milestone was reached in this epoch.
                 last_eval_accuracy = evaluate(model, test_loader, device)
@@ -514,6 +593,9 @@ def main() -> None:
                 f"test accuracy: {last_eval_accuracy * 100:.2f}% - "
                 f"images seen: {images_seen:,}"
             )
+            # Update progress file after each epoch
+            if progress_file:
+                write_progress("running")
 
     if not timeline_entries:
         # If training was skipped, at least export the initial snapshot.
@@ -523,6 +605,10 @@ def main() -> None:
         raise RuntimeError("Layer metadata could not be captured for export.")
     export_model(args.export_path, layer_metadata, timeline_entries)
     print(f"Exported weights to {args.export_path.resolve()}")
+    
+    # Mark training as complete
+    if progress_file:
+        write_progress("completed")
 
 
 if __name__ == "__main__":

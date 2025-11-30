@@ -36,15 +36,28 @@ def get_model_info():
 
 @api_bp.route('/training/start', methods=['POST'])
 def start_training():
-    """Start training job."""
+    """Start training job with optional hyperparameters."""
     try:
         data = request.get_json() or {}
         force = data.get('force', False)
         skip_if_exists = not force
         
+        # Extract hyperparameters
+        hyperparameters = {
+            'epochs': data.get('epochs'),
+            'batch_size': data.get('batch_size'),
+            'hidden_dims': data.get('hidden_dims'),
+            'lr': data.get('lr'),
+            'device': data.get('device'),
+        }
+        
+        # Remove None values
+        hyperparameters = {k: v for k, v in hyperparameters.items() if v is not None}
+        
         result = training_service.run_training(
             skip_if_exists=skip_if_exists,
-            force=force
+            force=force,
+            **hyperparameters
         )
         
         if result.get('success'):
@@ -54,10 +67,16 @@ def start_training():
                 message=result.get('message', 'Training completed')
             ).to_dict())
         else:
+            # Include more detailed error information
+            error_message = result.get('error', 'Training failed')
+            if result.get('stderr'):
+                error_message += f"\n\nStderr: {result.get('stderr')}"
+            if result.get('stdout'):
+                error_message += f"\n\nStdout: {result.get('stdout')}"
             return jsonify(ApiResponse(
                 success=False,
                 data=result,
-                message=result.get('error', 'Training failed')
+                message=error_message
             ).to_dict()), 500
     except Exception as e:
         return jsonify(ApiResponse(
@@ -84,6 +103,22 @@ def training_status():
         return jsonify(ApiResponse(
             success=False,
             message=f"Error getting training status: {e}"
+        ).to_dict()), 500
+
+
+@api_bp.route('/training/progress', methods=['GET'])
+def training_progress():
+    """Get current training progress."""
+    try:
+        progress = training_service.get_training_progress()
+        return jsonify(ApiResponse(
+            success=True,
+            data=progress
+        ).to_dict())
+    except Exception as e:
+        return jsonify(ApiResponse(
+            success=False,
+            message=f"Error getting training progress: {e}"
         ).to_dict()), 500
 
 

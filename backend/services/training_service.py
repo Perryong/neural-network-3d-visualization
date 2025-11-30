@@ -14,6 +14,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent.resolve()
 BACKEND_DIR = PROJECT_ROOT / "backend"
 TRAINING_SCRIPT = BACKEND_DIR / "training" / "mlp_train.py"
 WEIGHTS_JSON = PROJECT_ROOT / "frontend" / "exports" / "mlp_weights.json"
+PROGRESS_JSON = PROJECT_ROOT / "frontend" / "exports" / "training_progress.json"
 
 
 def check_weights_exist() -> bool:
@@ -21,12 +22,25 @@ def check_weights_exist() -> bool:
     return WEIGHTS_JSON.exists() and WEIGHTS_JSON.stat().st_size > 0
 
 
-def run_training(skip_if_exists: bool = True, force: bool = False) -> dict[str, Any]:
+def run_training(
+    skip_if_exists: bool = True,
+    force: bool = False,
+    epochs: int | None = None,
+    batch_size: int | None = None,
+    hidden_dims: list[int] | None = None,
+    lr: float | None = None,
+    device: str | None = None,
+) -> dict[str, Any]:
     """Run the training script if weights don't exist.
     
     Args:
         skip_if_exists: If True, skip training if weights already exist
         force: If True, force training even if weights exist
+        epochs: Number of training epochs
+        batch_size: Mini-batch size
+        hidden_dims: List of hidden layer dimensions
+        lr: Learning rate
+        device: Device to use (mps/cuda/cpu), None for auto
         
     Returns:
         Dictionary with 'success', 'message', and optional 'error' keys
@@ -54,8 +68,33 @@ def run_training(skip_if_exists: bool = True, force: bool = False) -> dict[str, 
         except ValueError:
             export_path = WEIGHTS_JSON
         
+        # Build command with hyperparameters
+        cmd = [sys.executable, str(TRAINING_SCRIPT), "--export-path", str(export_path)]
+        
+        # Add progress file for real-time monitoring
+        try:
+            progress_path = PROGRESS_JSON.relative_to(PROJECT_ROOT)
+        except ValueError:
+            progress_path = PROGRESS_JSON
+        cmd.extend(["--progress-file", str(progress_path)])
+        
+        if epochs is not None:
+            cmd.extend(["--epochs", str(epochs)])
+        
+        if batch_size is not None:
+            cmd.extend(["--batch-size", str(batch_size)])
+        
+        if hidden_dims is not None:
+            cmd.extend(["--hidden-dims"] + [str(d) for d in hidden_dims])
+        
+        if lr is not None:
+            cmd.extend(["--lr", str(lr)])
+        
+        if device is not None:
+            cmd.extend(["--device", device])
+        
         result = subprocess.run(
-            [sys.executable, str(TRAINING_SCRIPT), "--export-path", str(export_path)],
+            cmd,
             cwd=PROJECT_ROOT,
             check=False,
             capture_output=True,
@@ -66,13 +105,21 @@ def run_training(skip_if_exists: bool = True, force: bool = False) -> dict[str, 
             return {
                 "success": True,
                 "message": "Training completed successfully!",
-                "location": str(WEIGHTS_JSON)
+                "location": str(WEIGHTS_JSON),
+                "stdout": result.stdout if result.stdout else None
             }
         else:
+            error_msg = f"Training failed with exit code {result.returncode}"
+            if result.stderr:
+                error_msg += f"\n\nError output:\n{result.stderr}"
+            if result.stdout:
+                error_msg += f"\n\nStandard output:\n{result.stdout}"
             return {
                 "success": False,
-                "error": f"Training failed with exit code {result.returncode}",
-                "stderr": result.stderr
+                "error": error_msg,
+                "stderr": result.stderr,
+                "stdout": result.stdout,
+                "returncode": result.returncode
             }
     except Exception as e:
         return {
@@ -168,6 +215,29 @@ def validate_timeline(fix: bool = False) -> dict[str, Any]:
         return {
             "valid": False,
             "error": f"Could not validate timeline: {e}"
+        }
+
+
+def get_training_progress() -> dict[str, Any]:
+    """Get current training progress from progress file.
+    
+    Returns:
+        Dictionary with training progress information, or None if not training
+    """
+    if not PROGRESS_JSON.exists():
+        return {
+            "status": "not_running",
+            "message": "No training in progress"
+        }
+    
+    try:
+        with open(PROGRESS_JSON, 'r', encoding='utf-8') as f:
+            progress = json.load(f)
+        return progress
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": f"Could not read progress file: {e}"
         }
 
 

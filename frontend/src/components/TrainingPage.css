@@ -1,0 +1,140 @@
+.training-container {
+  max-width: 800px;
+  margin: 80px auto;
+  padding: var(--spacing-xl);
+  background: rgba(10, 16, 30, 0.88);
+  border: 1px solid rgba(91, 160, 255, 0.35);
+  border-radius: var(--border-radius);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+}
+
+.training-container h2 {
+  margin-top: 0;
+  color: #5ba0ff;
+  font-size: var(--font-xl);
+}
+
+.training-description {
+  color: rgba(245, 247, 255, 0.8);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-sm);
+}
+
+.training-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.form-group label {
+  font-size: var(--font-md);
+  color: #f5f7ff;
+  font-weight: 500;
+}
+
+.form-group input[type="number"],
+.form-group input[type="text"],
+.form-group select {
+  padding: var(--spacing-sm);
+  background: rgba(20, 30, 50, 0.6);
+  border: 1px solid rgba(91, 160, 255, 0.3);
+  border-radius: calc(var(--border-radius) / 2);
+  color: #f5f7ff;
+  font-size: var(--font-md);
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input[type="number"]:focus,
+.form-group input[type="text"]:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: rgba(91, 160, 255, 0.6);
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: var(--spacing-xs);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.form-group label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.form-hint {
+  font-size: var(--font-xs);
+  color: rgba(245, 247, 255, 0.6);
+  margin-top: calc(var(--spacing-xs) / 2);
+}
+
+.training-button {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: rgba(91, 160, 255, 0.2);
+  border: 1px solid rgba(91, 160, 255, 0.5);
+  border-radius: var(--border-radius);
+  color: #5ba0ff;
+  font-size: var(--font-md);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: var(--spacing-sm);
+}
+
+.training-button:hover:not(:disabled) {
+  background: rgba(91, 160, 255, 0.3);
+  border-color: rgba(91, 160, 255, 0.7);
+}
+
+.training-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.training-status {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid rgba(91, 160, 255, 0.2);
+}
+
+.training-status h3 {
+  color: #5ba0ff;
+  font-size: var(--font-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.training-output {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(91, 160, 255, 0.2);
+  border-radius: calc(var(--border-radius) / 2);
+  padding: var(--spacing-md);
+  font-family: 'Courier New', monospace;
+  font-size: var(--font-xs);
+  color: #f5f7ff;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.training-output.success {
+  border-color: rgba(76, 175, 80, 0.5);
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.training-output.error {
+  border-color: rgba(244, 67, 54, 0.5);
+  background: rgba(244, 67, 54, 0.1);
+}
+

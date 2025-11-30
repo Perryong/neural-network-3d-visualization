@@ -1934,7 +1934,15 @@ class NeuralVisualizer {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    
+    // Append canvas to visualization page instead of body
+    const visualizationPage = document.getElementById("visualizationPage");
+    if (visualizationPage) {
+      visualizationPage.appendChild(this.renderer.domElement);
+    } else {
+      // Fallback to body if visualization page not found
     document.body.appendChild(this.renderer.domElement);
+    }
     this.fpsMonitor = this.options.showFpsOverlay ? new FpsMonitor() : null;
 
     this.labelGroup = new THREE.Group();
@@ -2959,3 +2967,638 @@ function maxAbsValue(values) {
   }
   return max;
 }
+
+/**
+ * Training UI Panel - Vanilla JavaScript Component
+ * 
+ * Provides a user-friendly interface for configuring and starting model training
+ * without requiring React.js conversion.
+ */
+class TrainingPanel {
+  constructor(options = {}) {
+    this.apiBaseUrl = options.apiBaseUrl || '/api/v1';
+    this.onTrainingStart = options.onTrainingStart || null;
+    this.onTrainingComplete = options.onTrainingComplete || null;
+    this.onError = options.onError || null;
+    
+    // Training state
+    this.isTraining = false;
+    this.progressPollInterval = null;
+    this.trainingConfig = {
+      dataset: 'mnist',
+      epochs: 5,
+      batchSize: 128,
+      hiddenDims: [128, 64],
+      learningRate: 0.001,
+      force: false,
+    };
+    
+    // UI elements (populated after build)
+    this.elements = {};
+    
+    // Available datasets
+    this.datasets = [
+      { value: 'mnist', label: 'MNIST (Handwritten Digits)', inputDim: 784, classes: 10 },
+      { value: 'fashion_mnist', label: 'Fashion-MNIST (Clothing)', inputDim: 784, classes: 10 },
+      { value: 'cifar10', label: 'CIFAR-10 (Color Images)', inputDim: 3072, classes: 10 },
+      { value: 'cifar100', label: 'CIFAR-100 (Color Images)', inputDim: 3072, classes: 100 },
+    ];
+  }
+  
+  /**
+   * Build the training panel UI
+   */
+  build() {
+    const panel = document.createElement('div');
+    panel.className = 'training-panel';
+    panel.innerHTML = `
+      <div class="training-panel__header">
+        <h2>Model Training</h2>
+        <p class="training-panel__description">
+          Configure hyperparameters and train a new model. Training may take several minutes.
+        </p>
+      </div>
+      
+      <div class="training-panel__body">
+        <!-- Dataset Selection -->
+        <div class="training-field">
+          <label for="datasetSelect" class="training-field__label">
+            Dataset
+            <span class="training-field__hint">Choose the dataset to train on</span>
+          </label>
+          <select id="datasetSelect" class="training-field__select">
+            ${this.datasets.map(ds => `
+              <option value="${ds.value}" ${ds.value === this.trainingConfig.dataset ? 'selected' : ''}>
+                ${ds.label}
+              </option>
+            `).join('')}
+          </select>
+          <div class="training-field__info" id="datasetInfo">
+            <span class="info-badge">Input: 784</span>
+            <span class="info-badge">Classes: 10</span>
+          </div>
+        </div>
+        
+        <!-- Epochs -->
+        <div class="training-field">
+          <label for="epochsInput" class="training-field__label">
+            Epochs
+            <span class="training-field__hint">Number of training passes (default: 5)</span>
+          </label>
+          <input 
+            type="number" 
+            id="epochsInput" 
+            class="training-field__input" 
+            value="${this.trainingConfig.epochs}"
+            min="1"
+            max="50"
+          />
+        </div>
+        
+        <!-- Batch Size -->
+        <div class="training-field">
+          <label for="batchSizeInput" class="training-field__label">
+            Batch Size
+            <span class="training-field__hint">Mini-batch size for training (default: 128)</span>
+          </label>
+          <input 
+            type="number" 
+            id="batchSizeInput" 
+            class="training-field__input" 
+            value="${this.trainingConfig.batchSize}"
+            min="16"
+            max="512"
+            step="16"
+          />
+        </div>
+        
+        <!-- Hidden Layers -->
+        <div class="training-field">
+          <label for="hiddenDimsInput" class="training-field__label">
+            Hidden Layer Dimensions
+            <span class="training-field__hint">Comma-separated list of hidden layer sizes (default: 128, 64)</span>
+          </label>
+          <input 
+            type="text" 
+            id="hiddenDimsInput" 
+            class="training-field__input" 
+            value="${this.trainingConfig.hiddenDims.join(', ')}"
+            placeholder="e.g., 128, 64 or 256, 128, 64"
+          />
+          <button type="button" class="training-field__button-small" id="autoSizeBtn">
+            Auto-size layers
+          </button>
+        </div>
+        
+        <!-- Learning Rate -->
+        <div class="training-field">
+          <label for="learningRateInput" class="training-field__label">
+            Learning Rate
+            <span class="training-field__hint">Adam optimizer learning rate (default: 0.001)</span>
+          </label>
+          <input 
+            type="number" 
+            id="learningRateInput" 
+            class="training-field__input" 
+            value="${this.trainingConfig.learningRate}"
+            min="0.0001"
+            max="0.1"
+            step="0.0001"
+          />
+        </div>
+        
+        <!-- Force Retrain -->
+        <div class="training-field training-field--checkbox">
+          <label class="training-field__checkbox-label">
+            <input 
+              type="checkbox" 
+              id="forceRetrainCheck" 
+              class="training-field__checkbox"
+              ${this.trainingConfig.force ? 'checked' : ''}
+            />
+            <span>Force retrain (overwrite existing weights)</span>
+          </label>
+        </div>
+        
+        <!-- Training Command Preview -->
+        <div class="training-command">
+          <div class="training-command__header">
+            <span class="training-command__label">Training Command</span>
+            <button type="button" class="training-command__copy" id="copyCommandBtn" title="Copy to clipboard">
+              📋 Copy
+            </button>
+          </div>
+          <pre class="training-command__code" id="commandPreview"></pre>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="training-actions">
+          <button type="button" class="training-actions__button training-actions__button--primary" id="startTrainingBtn">
+            🚀 Start Training
+          </button>
+          <button type="button" class="training-actions__button training-actions__button--secondary" id="checkStatusBtn">
+            📊 Check Status
+          </button>
+        </div>
+        
+        <!-- Progress/Status Display -->
+        <div class="training-status" id="trainingStatus" style="display: none;">
+          <div class="training-status__spinner"></div>
+          <div class="training-status__message" id="statusMessage">Initializing training...</div>
+        </div>
+        
+        <!-- Error Display -->
+        <div class="training-error" id="trainingError" style="display: none;">
+          <div class="training-error__icon">⚠️</div>
+          <div class="training-error__message" id="errorMessage"></div>
+        </div>
+      </div>
+    `;
+    
+    this.panel = panel;
+    this.attachEventListeners();
+    this.updateCommandPreview();
+    this.updateDatasetInfo();
+    
+    return panel;
+  }
+  
+  /**
+   * Attach event listeners to UI elements
+   */
+  attachEventListeners() {
+    // Store element references
+    this.elements = {
+      datasetSelect: this.panel.querySelector('#datasetSelect'),
+      epochsInput: this.panel.querySelector('#epochsInput'),
+      batchSizeInput: this.panel.querySelector('#batchSizeInput'),
+      hiddenDimsInput: this.panel.querySelector('#hiddenDimsInput'),
+      learningRateInput: this.panel.querySelector('#learningRateInput'),
+      forceRetrainCheck: this.panel.querySelector('#forceRetrainCheck'),
+      commandPreview: this.panel.querySelector('#commandPreview'),
+      datasetInfo: this.panel.querySelector('#datasetInfo'),
+      startTrainingBtn: this.panel.querySelector('#startTrainingBtn'),
+      checkStatusBtn: this.panel.querySelector('#checkStatusBtn'),
+      autoSizeBtn: this.panel.querySelector('#autoSizeBtn'),
+      copyCommandBtn: this.panel.querySelector('#copyCommandBtn'),
+      trainingStatus: this.panel.querySelector('#trainingStatus'),
+      statusMessage: this.panel.querySelector('#statusMessage'),
+      trainingError: this.panel.querySelector('#trainingError'),
+      errorMessage: this.panel.querySelector('#errorMessage'),
+    };
+    
+    // Dataset change
+    this.elements.datasetSelect.addEventListener('change', () => {
+      this.trainingConfig.dataset = this.elements.datasetSelect.value;
+      this.updateCommandPreview();
+      this.updateDatasetInfo();
+    });
+    
+    // Input changes
+    ['epochsInput', 'batchSizeInput', 'hiddenDimsInput', 'learningRateInput'].forEach(id => {
+      this.elements[id].addEventListener('input', () => this.updateConfigFromInputs());
+    });
+    
+    this.elements.forceRetrainCheck.addEventListener('change', () => {
+      this.trainingConfig.force = this.elements.forceRetrainCheck.checked;
+      this.updateCommandPreview();
+    });
+    
+    // Auto-size button
+    this.elements.autoSizeBtn.addEventListener('click', () => this.autoSizeLayers());
+    
+    // Copy command button
+    this.elements.copyCommandBtn.addEventListener('click', () => this.copyCommand());
+    
+    // Start training button
+    this.elements.startTrainingBtn.addEventListener('click', () => this.startTraining());
+    
+    // Check status button
+    this.elements.checkStatusBtn.addEventListener('click', () => this.checkTrainingStatus());
+  }
+  
+  /**
+   * Update config from input values
+   */
+  updateConfigFromInputs() {
+    this.trainingConfig.epochs = parseInt(this.elements.epochsInput.value) || 5;
+    this.trainingConfig.batchSize = parseInt(this.elements.batchSizeInput.value) || 128;
+    this.trainingConfig.learningRate = parseFloat(this.elements.learningRateInput.value) || 0.001;
+    
+    // Parse hidden dimensions
+    const hiddenText = this.elements.hiddenDimsInput.value.trim();
+    if (hiddenText) {
+      this.trainingConfig.hiddenDims = hiddenText
+        .split(',')
+        .map(s => parseInt(s.trim()))
+        .filter(n => !isNaN(n) && n > 0);
+    }
+    
+    this.updateCommandPreview();
+  }
+  
+  /**
+   * Update dataset info display
+   */
+  updateDatasetInfo() {
+    const dataset = this.datasets.find(ds => ds.value === this.trainingConfig.dataset);
+    if (!dataset) return;
+    
+    this.elements.datasetInfo.innerHTML = `
+      <span class="info-badge">Input: ${dataset.inputDim}</span>
+      <span class="info-badge">Classes: ${dataset.classes}</span>
+    `;
+  }
+  
+  /**
+   * Auto-size hidden layers based on selected dataset
+   */
+  autoSizeLayers() {
+    const dataset = this.datasets.find(ds => ds.value === this.trainingConfig.dataset);
+    if (!dataset) return;
+    
+    // Heuristic: Start with sqrt of input_dim, then halve
+    let firstHidden = Math.max(64, Math.min(512, Math.floor(Math.sqrt(dataset.inputDim))));
+    const layers = [firstHidden];
+    let current = firstHidden;
+    
+    while (current > dataset.classes * 2) {
+      current = Math.floor(current / 2);
+      if (current > dataset.classes) {
+        layers.push(current);
+      }
+    }
+    
+    this.trainingConfig.hiddenDims = layers;
+    this.elements.hiddenDimsInput.value = layers.join(', ');
+    this.updateCommandPreview();
+  }
+  
+  /**
+   * Update command preview
+   */
+  updateCommandPreview() {
+    const parts = [
+      'python backend/training/mlp_train.py',
+      `--epochs ${this.trainingConfig.epochs}`,
+      `--batch-size ${this.trainingConfig.batchSize}`,
+      `--lr ${this.trainingConfig.learningRate}`,
+      `--hidden-dims ${this.trainingConfig.hiddenDims.join(' ')}`,
+      '--export-path frontend/exports/mlp_weights.json',
+    ];
+    
+    if (this.trainingConfig.force) {
+      parts.push('# Note: Will overwrite existing weights');
+    }
+    
+    this.elements.commandPreview.textContent = parts.join(' \\\n  ');
+  }
+  
+  /**
+   * Copy command to clipboard
+   */
+  async copyCommand() {
+    const command = this.elements.commandPreview.textContent.replace(/\\\n\s*/g, ' ');
+    
+    try {
+      await navigator.clipboard.writeText(command);
+      this.elements.copyCommandBtn.textContent = '✓ Copied!';
+      setTimeout(() => {
+        this.elements.copyCommandBtn.textContent = '📋 Copy';
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  }
+  
+  /**
+   * Start training via API
+   */
+  async startTraining() {
+    if (this.isTraining) return;
+    
+    this.isTraining = true;
+    this.showStatus('Starting training... This may take several minutes.');
+    this.hideError();
+    this.elements.startTrainingBtn.disabled = true;
+    
+    try {
+      if (typeof this.onTrainingStart === 'function') {
+        this.onTrainingStart(this.trainingConfig);
+      }
+      
+      const response = await fetch(`${this.apiBaseUrl}/training/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+          epochs: this.trainingConfig.epochs,
+          batch_size: this.trainingConfig.batchSize,
+          hidden_dims: this.trainingConfig.hiddenDims,
+          lr: this.trainingConfig.learningRate,
+          // Note: dataset parameter is not yet supported by backend
+          // dataset: this.trainingConfig.dataset,
+          force: this.trainingConfig.force,
+          }),
+        });
+
+      // Check if response is ok
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `HTTP ${response.status}: ${response.statusText}` }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Check if training was actually run or skipped
+        const message = result.data?.message || result.message || 'Training completed successfully!';
+        const wasSkipped = message.includes('already exist') || message.includes('skipping');
+        
+        if (wasSkipped) {
+          this.showStatus('⚠ Training skipped: Weights already exist. Enable "Force retrain" to overwrite.');
+          setTimeout(() => {
+            this.hideStatus();
+          }, 5000);
+        } else {
+          // Start polling for progress
+          this.startProgressPolling();
+        }
+        } else {
+        // Extract error message from result
+        let errorMessage = result.message || 'Training failed';
+        if (result.data) {
+          if (result.data.error) {
+            errorMessage = result.data.error;
+          }
+          if (result.data.stderr) {
+            errorMessage += '\n\nStderr: ' + result.data.stderr;
+          }
+          if (result.data.stdout) {
+            errorMessage += '\n\nStdout: ' + result.data.stdout;
+          }
+        }
+        console.error('Training failed:', result);
+        throw new Error(errorMessage);
+        }
+      } catch (error) {
+      console.error('Training error:', error);
+      let errorMessage = error.message || 'Training failed. See console for details.';
+      
+      // If it's a network error, provide more helpful message
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = 'Failed to connect to the training server. Make sure the backend is running.';
+      }
+      
+      this.showError(errorMessage);
+      
+      if (typeof this.onError === 'function') {
+        this.onError(error);
+      }
+      } finally {
+      this.stopProgressPolling();
+      this.isTraining = false;
+      this.elements.startTrainingBtn.disabled = false;
+    }
+  }
+  
+  /**
+   * Start polling for training progress
+   */
+  startProgressPolling() {
+    // Poll every 2 seconds
+    this.progressPollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`${this.apiBaseUrl}/training/progress`);
+        if (!response.ok) return;
+        
+        const result = await response.json();
+        if (result.success && result.data) {
+          const progress = result.data;
+          
+          if (progress.status === 'completed') {
+            this.stopProgressPolling();
+            this.showStatus('✓ Training completed successfully!');
+            if (typeof this.onTrainingComplete === 'function') {
+              this.onTrainingComplete({ progress });
+            }
+            
+            setTimeout(() => {
+              this.hideStatus();
+              // Offer to reload the page to see new model
+              if (confirm('Training complete! Reload to visualize the new model?')) {
+                window.location.reload();
+              }
+            }, 2000);
+          } else if (progress.status === 'running' || progress.status === 'initializing') {
+            // Update status with progress information
+            const epochInfo = progress.current_epoch > 0 
+              ? `Epoch ${progress.current_epoch}/${progress.target_epochs}`
+              : 'Initializing...';
+            const progressPercent = progress.progress_percent || 0;
+            const accuracy = progress.test_accuracy ? `Accuracy: ${progress.test_accuracy.toFixed(2)}%` : '';
+            const loss = progress.current_loss > 0 ? `Loss: ${progress.current_loss.toFixed(4)}` : '';
+            const images = progress.images_seen ? `Images: ${progress.images_seen.toLocaleString()}` : '';
+            
+            const statusParts = [epochInfo];
+            if (progressPercent > 0) statusParts.push(`${progressPercent.toFixed(1)}%`);
+            if (accuracy) statusParts.push(accuracy);
+            if (loss) statusParts.push(loss);
+            if (images) statusParts.push(images);
+            
+            this.showStatus(statusParts.join(' • '));
+          } else if (progress.status === 'error') {
+            this.stopProgressPolling();
+            this.showError(progress.error || 'Training failed');
+          }
+        }
+      } catch (error) {
+        console.error('Error polling progress:', error);
+        // Don't show error to user, just log it
+      }
+    }, 2000);
+  }
+  
+  /**
+   * Stop polling for training progress
+   */
+  stopProgressPolling() {
+    if (this.progressPollInterval) {
+      clearInterval(this.progressPollInterval);
+      this.progressPollInterval = null;
+    }
+  }
+  
+  /**
+   * Check training status via API
+   */
+  async checkTrainingStatus() {
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/training/status`);
+      const result = await response.json();
+      
+      if (result.success) {
+        const info = result.data.model_info;
+        const exists = result.data.weights_exist;
+        
+        if (exists && info) {
+          alert(
+            `Model Status:\n` +
+            `Architecture: ${info.architecture?.join(' → ') || 'Unknown'}\n` +
+            `Layers: ${info.layers || 'Unknown'}\n` +
+            `Timeline entries: ${info.timeline_entries || 0}\n` +
+            `Location: ${info.location || 'Unknown'}`
+          );
+        } else {
+          alert('No trained model found. Start training to create one.');
+        }
+      }
+    } catch (error) {
+      console.error('Status check error:', error);
+      this.showError('Failed to check status. See console for details.');
+    }
+  }
+  
+  /**
+   * Show training status
+   */
+  showStatus(message) {
+    this.elements.statusMessage.textContent = message;
+    this.elements.trainingStatus.style.display = 'flex';
+  }
+  
+  /**
+   * Hide training status
+   */
+  hideStatus() {
+    this.elements.trainingStatus.style.display = 'none';
+  }
+  
+  /**
+   * Show error message
+   */
+  showError(message) {
+    this.elements.errorMessage.textContent = message;
+    this.elements.trainingError.style.display = 'flex';
+  }
+  
+  /**
+   * Hide error message
+   */
+  hideError() {
+    this.elements.trainingError.style.display = 'none';
+  }
+  
+  /**
+   * Get the panel element
+   */
+  getElement() {
+    return this.panel;
+  }
+}
+
+/**
+ * Initialize training panel in the application
+ */
+function initializeTrainingPanel() {
+  const container = document.getElementById('trainingPanelContainer');
+  if (!container) {
+    console.error('Training panel container not found');
+    return null;
+  }
+  
+  const trainingPanel = new TrainingPanel({
+    apiBaseUrl: '/api/v1',
+    onTrainingStart: (config) => {
+      console.log('Training started with config:', config);
+    },
+    onTrainingComplete: (result) => {
+      console.log('Training completed:', result);
+    },
+    onError: (error) => {
+      console.error('Training error:', error);
+    },
+  });
+  
+  const panelElement = trainingPanel.build();
+  container.appendChild(panelElement);
+  
+  return trainingPanel;
+}
+
+// Tab Navigation
+let trainingPanelInstance = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const tabButtons = document.querySelectorAll(".tab-button");
+  const pages = document.querySelectorAll(".page-content");
+
+  tabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetTab = button.getAttribute("data-tab");
+
+      // Update active tab button
+      tabButtons.forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+
+      // Show/hide pages
+      pages.forEach((page) => {
+        if (page.id === `${targetTab}Page`) {
+          page.classList.add("active");
+          
+          // Initialize training panel when training tab is shown
+          if (targetTab === "training" && !trainingPanelInstance) {
+            trainingPanelInstance = initializeTrainingPanel();
+          }
+        } else {
+          page.classList.remove("active");
+        }
+      });
+    });
+  });
+
+  // Initialize training panel if training tab is already active
+  const trainingPage = document.getElementById("trainingPage");
+  if (trainingPage && trainingPage.classList.contains("active")) {
+    trainingPanelInstance = initializeTrainingPanel();
+  }
+});

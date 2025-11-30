@@ -1,0 +1,14 @@
+{
+  "status": "completed",
+  "current_epoch": 50,
+  "target_epochs": 50,
+  "images_seen": 3000000,
+  "total_required_images": 3000000,
+  "global_step": 23450,
+  "milestone_index": 35,
+  "total_milestones": 35,
+  "current_loss": 0.007356651385515579,
+  "test_accuracy": 97.74000000000001,
+  "dataset_passes": 50.0,
+  "progress_percent": 100.0
+}
